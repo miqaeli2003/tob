@@ -4,7 +4,7 @@ import sys
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 URL            = "https://vinme.ge/"
-MESSAGE        = "hello welcome to my site"
+MESSAGE        = "ჰეიი ზუსტად იგივე საიტია ბევრი ხალხით თან ბოტებიც არ არიან. გადმოდი https://gaicani.online/"
 LOOP_DELAY     = 3        # seconds between "find next" cycles
 MESSAGE_DELAY  = 1.5      # seconds after sending before moving on
 HEADLESS       = True     # set False to watch the browser
