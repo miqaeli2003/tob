@@ -4,7 +4,7 @@ import sys
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 URL            = "https://vinme.ge/"
-MESSAGE        = "ჰეიი ზუსტად იგივე საიტია ბევრი ხალხით თან ბოტებიც არ არიან. გადმოდი https://gaicani.online/   "
+MESSAGE        = "ჰეიი ზუსტად იგივე საიტია ბევრი ხალხით თან ბოტებიც არ არიან. გადმოდი https://gaicani.online/"
 LOOP_DELAY     = 3        # seconds between "find next" cycles
 MESSAGE_DELAY  = 1.5      # seconds after sending before moving on
 HEADLESS       = True     # set False to watch the browser
@@ -112,6 +112,8 @@ def run():
             # Type and send message
             try:
                 msg_sel = find_element(page, MESSAGE_SELECTORS, "Message input")
+                # Wait until input is enabled (partner has connected)
+                page.locator(msg_sel).wait_for(state="enabled", timeout=3000)
                 page.fill(msg_sel, MESSAGE)
                 print(f"✉ Message filled: {MESSAGE!r}")
 
