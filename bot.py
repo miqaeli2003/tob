@@ -4,7 +4,7 @@ import sys
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 URL            = "https://vinme.ge/"
-MESSAGE        = "სალამი ზუსტაც ესეთი გაცნობის საიტია მეტი ხალხით და ბოტების გარაშე გადმოდი https://gaicani.online/ "
+MESSAGE        = "hello welcome to my site"
 LOOP_DELAY     = 3        # seconds between "find next" cycles
 MESSAGE_DELAY  = 1.5      # seconds after sending before moving on
 HEADLESS       = True     # set False to watch the browser
@@ -106,27 +106,20 @@ def run():
                 time.sleep(LOOP_DELAY)
                 continue
 
-            # Wait for chat partner to be matched
-            page.wait_for_timeout(2500)
-
-            # Type and send message
+            # Type and send message as soon as partner connects
             try:
                 msg_sel = find_element(page, MESSAGE_SELECTORS, "Message input")
-                # Wait until input is enabled (partner has connected)
-                try:
-                    page.wait_for_function(
-                        "sel => !document.querySelector(sel).disabled",
-                        arg=msg_sel, timeout=30000
-                    )
-                except PWTimeout:
-                    print("⚠ No partner connected in time, skipping cycle")
-                    continue
+                # Wait indefinitely until input is enabled (partner connected)
+                page.wait_for_function(
+                    "sel => !document.querySelector(sel).disabled",
+                    arg=msg_sel
+                )
                 page.fill(msg_sel, MESSAGE)
                 print(f"✉ Message filled: {MESSAGE!r}")
 
                 submit_sel = find_element(page, SUBMIT_SELECTORS, "Submit button")
                 page.click(submit_sel)
-                print("✔ Message sent — moving to next immediately")
+                print("✔ Message sent — finding next")
 
             except RuntimeError as e:
                 print(f"⚠ Could not send message: {e}")
