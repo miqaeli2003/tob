@@ -1,69 +1,133 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import time
+import sys
 
-# ----------------------------
-# HEADLESS CHROME SETUP
-# ----------------------------
-options = Options()
-options.add_argument("--headless=new")          # no window
-options.add_argument("--disable-gpu")
-options.add_argument("--window-size=1920,1080")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
+# ─── Config ───────────────────────────────────────────────────────────────────
+URL            = "https://vinme.ge/"
+MESSAGE        = "hello welcome to my site"
+LOOP_DELAY     = 3        # seconds between "find next" cycles
+MESSAGE_DELAY  = 1.5      # seconds after sending before moving on
+HEADLESS       = True     # set False to watch the browser
 
-driver = webdriver.Chrome(options=options)
+# Selector candidates – first match wins
+START_SELECTORS    = ["#startButton", "a:has-text('საუბრის დაწყება')",
+                       "button:has-text('Start')", "[class*='start']"]
+NEXT_SELECTORS     = ["#findNextButton", "a:has-text('მომიძებნე სხვა')",
+                       "button:has-text('Next')", "[class*='next']",
+                       "a[href*='next']"]
+MESSAGE_SELECTORS  = ["#message", "textarea", "input[type='text']",
+                       "[placeholder]", "[class*='message']"]
+SUBMIT_SELECTORS   = ["#submit", "button[type='submit']",
+                       "button:has-text('გაგზავნა')", "button:has-text('Send')",
+                       "[class*='send']", "[class*='submit']"]
+# ──────────────────────────────────────────────────────────────────────────────
 
-# Open site
-driver.get("http://vinme.ge/")
 
-time.sleep(5)
+def find_element(page, selectors: list, label: str, timeout: int = 5000):
+    """Try each selector in order; return the first one that exists."""
+    for sel in selectors:
+        try:
+            page.wait_for_selector(sel, timeout=timeout, state="visible")
+            print(f"  ✓ [{label}] found via: {sel}")
+            return sel
+        except PWTimeout:
+            continue
+    raise RuntimeError(f"Could not find [{label}] with any selector: {selectors}")
 
-# ----------------------------
-# START CHAT
-# ----------------------------
-try:
-    start_btn = driver.find_element(By.ID, "startButton")
-    start_btn.click()
-    print("✅ Started chat")
-except:
-    print("❌ Start button not found")
 
-time.sleep(5)
+def dump_page_selectors(page):
+    """Helper – prints ids/classes on the page so you can tune selectors."""
+    ids = page.evaluate("""
+        () => [...document.querySelectorAll('[id]')]
+              .map(e => '#' + e.id)
+    """)
+    print("\n── Element IDs on page ──")
+    for i in ids:
+        print(" ", i)
 
-# ----------------------------
-# MAIN LOOP
-# ----------------------------
-while True:
-    try:
-        # Find next user
-        next_btn = driver.find_element(By.ID, "findNextButton")
-        next_btn.click()
-        print("🔄 Clicked Find Next")
+    buttons = page.evaluate("""
+        () => [...document.querySelectorAll('button,a,input[type=button],input[type=submit]')]
+              .map(e => e.outerHTML.slice(0, 120))
+    """)
+    print("\n── Buttons / links ──")
+    for b in buttons:
+        print(" ", b)
+    print("────────────────────────\n")
 
-        time.sleep(2)
 
-        # Message box + send button
-        msg_box = driver.find_element(By.ID, "message")
-        send_btn = driver.find_element(By.ID, "submit")
-
-        # First message
-        msg_box.send_keys("hi")
-        send_btn.click()
-
-        time.sleep(2)
-
-        # Second message
-        msg_box.send_keys(
-            "ზუსტად ესეთი გაცნობის საიტია, ამას ბევრად ჯობია ❤️ https://gaicani.online/"
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=HEADLESS)
+        context = browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            )
         )
-        send_btn.click()
+        page = context.new_page()
 
-        print("✅ Message sent successfully")
+        # ── Load site ─────────────────────────────────────────────────────────
+        print(f"Opening {URL} …")
+        page.goto(URL, wait_until="domcontentloaded", timeout=30_000)
+        page.wait_for_load_state("networkidle", timeout=15_000)
+        print("Page loaded.\n")
 
-        time.sleep(5)
+        # Uncomment the line below once to inspect real selectors:
+        # dump_page_selectors(page)
 
-    except Exception as e:
-        print("❌ Error:", e)
-        time.sleep(3)
+        # ── Click Start ───────────────────────────────────────────────────────
+        try:
+            start_sel = find_element(page, START_SELECTORS, "Start button")
+            page.click(start_sel)
+            print("▶ Start clicked")
+        except RuntimeError as e:
+            print(f"⚠ Start button not found: {e}")
+            dump_page_selectors(page)
+            sys.exit(1)
+
+        # Wait until chat UI is ready
+        page.wait_for_timeout(2000)
+
+        # ── Main loop ─────────────────────────────────────────────────────────
+        MAX_CYCLES = 10
+        cycle = 0
+        while cycle < MAX_CYCLES:
+            cycle += 1
+            print(f"\n── Cycle {cycle}/{MAX_CYCLES} ──────────────────────")
+
+            # Find next stranger
+            try:
+                next_sel = find_element(page, NEXT_SELECTORS, "Find Next")
+                page.click(next_sel)
+                print("⏭ Next clicked")
+            except RuntimeError as e:
+                print(f"⚠ Next button not found: {e}")
+                time.sleep(LOOP_DELAY)
+                continue
+
+            # Wait for chat partner to be matched
+            page.wait_for_timeout(2500)
+
+            # Type and send message
+            try:
+                msg_sel = find_element(page, MESSAGE_SELECTORS, "Message input")
+                page.fill(msg_sel, MESSAGE)
+                print(f"✉ Message filled: {MESSAGE!r}")
+
+                submit_sel = find_element(page, SUBMIT_SELECTORS, "Submit button")
+                page.click(submit_sel)
+                print("✔ Message sent")
+
+            except RuntimeError as e:
+                print(f"⚠ Could not send message: {e}")
+
+            time.sleep(MESSAGE_DELAY)
+            page.wait_for_timeout(int(LOOP_DELAY * 1000))
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except KeyboardInterrupt:
+        print("\nStopped by user.")
