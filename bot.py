@@ -4,7 +4,7 @@ import sys
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 URL            = "https://vinme.ge/"
-MESSAGE        = "ჰეიი ზუსტად იგივე საიტია ბევრი ხალხით თან ბოტებიც არ არიან. გადმოდი https://gaicani.online/"
+MESSAGE        = "სალამი ზუსტაც ესეთი გაცნობის საიტია მეტი ხალხით და ბოტების გარაშე გადმოდი https://gaicani.online/ "
 LOOP_DELAY     = 3        # seconds between "find next" cycles
 MESSAGE_DELAY  = 1.5      # seconds after sending before moving on
 HEADLESS       = True     # set False to watch the browser
@@ -126,13 +126,10 @@ def run():
 
                 submit_sel = find_element(page, SUBMIT_SELECTORS, "Submit button")
                 page.click(submit_sel)
-                print("✔ Message sent")
+                print("✔ Message sent — moving to next immediately")
 
             except RuntimeError as e:
                 print(f"⚠ Could not send message: {e}")
-
-            time.sleep(MESSAGE_DELAY)
-            page.wait_for_timeout(int(LOOP_DELAY * 1000))
 
 
 if __name__ == "__main__":
