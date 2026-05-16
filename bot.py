@@ -113,10 +113,14 @@ def run():
             try:
                 msg_sel = find_element(page, MESSAGE_SELECTORS, "Message input")
                 # Wait until input is enabled (partner has connected)
-                page.wait_for_function(
-                    "sel => !document.querySelector(sel).disabled",
-                    arg=msg_sel, timeout=15000
-                )
+                try:
+                    page.wait_for_function(
+                        "sel => !document.querySelector(sel).disabled",
+                        arg=msg_sel, timeout=30000
+                    )
+                except PWTimeout:
+                    print("⚠ No partner connected in time, skipping cycle")
+                    continue
                 page.fill(msg_sel, MESSAGE)
                 print(f"✉ Message filled: {MESSAGE!r}")
 
