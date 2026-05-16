@@ -70,7 +70,7 @@ def run():
         # ── Load site ─────────────────────────────────────────────────────────
         print(f"Opening {URL} …")
         page.goto(URL, wait_until="domcontentloaded", timeout=30_000)
-        page.wait_for_load_state("networkidle", timeout=15_000)
+        page.wait_for_load_state("networkidle", timeout=1000)
         print("Page loaded.\n")
 
         # Uncomment the line below once to inspect real selectors:
@@ -113,7 +113,10 @@ def run():
             try:
                 msg_sel = find_element(page, MESSAGE_SELECTORS, "Message input")
                 # Wait until input is enabled (partner has connected)
-                page.locator(msg_sel).wait_for(state="enabled", timeout=3000)
+                page.wait_for_function(
+                    "sel => !document.querySelector(sel).disabled",
+                    msg_sel, timeout=15000
+                )
                 page.fill(msg_sel, MESSAGE)
                 print(f"✉ Message filled: {MESSAGE!r}")
 
