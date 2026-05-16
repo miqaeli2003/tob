@@ -70,7 +70,7 @@ def run():
         # ── Load site ─────────────────────────────────────────────────────────
         print(f"Opening {URL} …")
         page.goto(URL, wait_until="domcontentloaded", timeout=30_000)
-        page.wait_for_load_state("networkidle", timeout=1000)
+        page.wait_for_load_state("networkidle", timeout=15_000)
         print("Page loaded.\n")
 
         # Uncomment the line below once to inspect real selectors:
