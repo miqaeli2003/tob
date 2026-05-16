@@ -106,23 +106,26 @@ def run():
                 time.sleep(LOOP_DELAY)
                 continue
 
-            # Type and send message as soon as partner connects
-            try:
-                msg_sel = find_element(page, MESSAGE_SELECTORS, "Message input")
-                # Wait indefinitely until input is enabled (partner connected)
-                page.wait_for_function(
-                    "sel => !document.querySelector(sel).disabled",
-                    arg=msg_sel
-                )
-                page.fill(msg_sel, MESSAGE)
-                print(f"✉ Message filled: {MESSAGE!r}")
-
-                submit_sel = find_element(page, SUBMIT_SELECTORS, "Submit button")
-                page.click(submit_sel)
-                print("✔ Message sent — finding next")
-
-            except RuntimeError as e:
-                print(f"⚠ Could not send message: {e}")
+            # Wait for partner, send message, retry if failed
+            while True:
+                try:
+                    msg_sel = find_element(page, MESSAGE_SELECTORS, "Message input")
+                    page.wait_for_function(
+                        "sel => !document.querySelector(sel).disabled",
+                        arg=msg_sel
+                    )
+                    page.fill(msg_sel, MESSAGE)
+                    submit_sel = find_element(page, SUBMIT_SELECTORS, "Submit button")
+                    page.click(submit_sel)
+                    print("✔ Message sent — finding next")
+                    break  # success, move to next cycle
+                except Exception as e:
+                    print(f"⚠ Send failed ({e}) — finding new partner")
+                    try:
+                        next_sel = find_element(page, NEXT_SELECTORS, "Find Next")
+                        page.click(next_sel)
+                    except Exception:
+                        pass
 
 
 if __name__ == "__main__":
