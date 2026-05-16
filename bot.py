@@ -4,7 +4,7 @@ import sys
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 URL            = "https://vinme.ge/"
-MESSAGE        = "ჰეიი ზუსტად იგივე საიტია ბევრი ხალხით თან ბოტებიც არ არიან. გადმოდი https://gaicani.online/"
+MESSAGE        = "hello welcome to my site"
 LOOP_DELAY     = 3        # seconds between "find next" cycles
 MESSAGE_DELAY  = 1.5      # seconds after sending before moving on
 HEADLESS       = True     # set False to watch the browser
@@ -115,7 +115,7 @@ def run():
                 # Wait until input is enabled (partner has connected)
                 page.wait_for_function(
                     "sel => !document.querySelector(sel).disabled",
-                    msg_sel, timeout=15000
+                    arg=msg_sel, timeout=15000
                 )
                 page.fill(msg_sel, MESSAGE)
                 print(f"✉ Message filled: {MESSAGE!r}")
