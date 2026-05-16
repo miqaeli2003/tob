@@ -90,11 +90,10 @@ def run():
         page.wait_for_timeout(2000)
 
         # ── Main loop ─────────────────────────────────────────────────────────
-        MAX_CYCLES = 10
         cycle = 0
-        while cycle < MAX_CYCLES:
+        while True:
             cycle += 1
-            print(f"\n── Cycle {cycle}/{MAX_CYCLES} ──────────────────────")
+            print(f"\n── Cycle {cycle} ──────────────────────")
 
             # Find next stranger
             try:
